@@ -12,6 +12,9 @@ public class Window {
     // El puntero de la ventana en si
     private long handle;
 
+    // Quien dibuja
+    private Renderer renderer;
+
     public Window(int width, int height, String title) {
         GLFWErrorCallback.createPrint(System.err).set();
 
@@ -27,11 +30,14 @@ public class Window {
             throw new RuntimeException("No se pudo crear la ventana de GLFW");
 
         glfwMakeContextCurrent(handle);
+
+        GL.createCapabilities();
+
+        renderer = new Renderer();
     }
 
     // Se ejecuta hasta que se cierra todo
     public void renderLoop() {
-        GL.createCapabilities();
 
         glClearColor(0.24f, 0.56f, 0.74f, 1.0f);
 
@@ -39,11 +45,16 @@ public class Window {
             glfwPollEvents();
 
             glClear(GL_COLOR_BUFFER_BIT);
+
+            renderer.render();
+
             glfwSwapBuffers(handle);
         }
     }
 
     public void cleanup() {
+        renderer.cleanup();
+
         glfwFreeCallbacks(handle);
         glfwDestroyWindow(handle);
 
