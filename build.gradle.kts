@@ -1,5 +1,7 @@
 import org.gradle.internal.os.OperatingSystem
 
+import org.gradle.api.JavaVersion
+
 plugins {
     id("java")
     id("application")
@@ -7,6 +9,11 @@ plugins {
 
 group = "org.mclonia"
 version = "1.0-SNAPSHOT"
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
 
 val lwjglNatives = Pair(
     System.getProperty("os.name")!!,

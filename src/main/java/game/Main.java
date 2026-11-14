@@ -8,16 +8,16 @@ public class Main {
         GameLogger.log("Iniciando MC-Lonia...");
         GameLogger.log("Version de LWJGL: " + Version.getVersion());
 
-        Game game = null;
+        int width = 1280;
+        int height = 720;
+
+        Game game = new Game(width, height, "MC-Lonia");
         try {
-            game = new Game(896, 504, "MCLonia");
             game.run();
         } catch (Exception e) {
             GameLogger.logError("Error fatal durante la ejecucion", e);
         } finally {
-            if (game != null) {
-                game.cleanup();
-            }
+            game.cleanup();
             GameLogger.close();
         }
     }

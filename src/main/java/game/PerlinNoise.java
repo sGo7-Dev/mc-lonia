@@ -53,11 +53,11 @@ public class PerlinNoise {
         double w = fade(z);
 
         int A = permutation[X] + Y;
-        int AA = permutation[A & 255] + Z;
-        int AB = permutation[(A + 1) & 255] + Z;
+        int AA = (permutation[A & 255] + Z) & 255;
+        int AB = (permutation[(A + 1) & 255] + Z) & 255;
         int B = permutation[(X + 1) & 255] + Y;
-        int BA = permutation[B & 255] + Z;
-        int BB = permutation[(B + 1) & 255] + Z;
+        int BA = (permutation[B & 255] + Z) & 255;
+        int BB = (permutation[(B + 1) & 255] + Z) & 255;
 
         double result = lerp(
             lerp(
@@ -67,10 +67,10 @@ public class PerlinNoise {
                      grad(permutation[BB], x - 1, y - 1, z), u),
                 v),
             lerp(
-                lerp(grad(permutation[AA + 1], x, y, z - 1),
-                     grad(permutation[BA + 1], x - 1, y, z - 1), u),
-                lerp(grad(permutation[AB + 1], x, y - 1, z - 1),
-                     grad(permutation[BB + 1], x - 1, y - 1, z - 1), u),
+                lerp(grad(permutation[(AA + 1) & 255], x, y, z - 1),
+                     grad(permutation[(BA + 1) & 255], x - 1, y, z - 1), u),
+                lerp(grad(permutation[(AB + 1) & 255], x, y - 1, z - 1),
+                     grad(permutation[(BB + 1) & 255], x - 1, y - 1, z - 1), u),
                 v),
             w);
 
