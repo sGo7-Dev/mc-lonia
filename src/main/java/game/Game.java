@@ -1,21 +1,18 @@
-package org.mclonia.game;
+package game;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
-import org.LWJGL.glfw.GLFWCursorPosCallback;
-import org.LWJGL.glfw.GLFWKeyCallback;
+import org.lwjgl.glfw.GLFWCursorPosCallback;
+import org.lwjgl.glfw.GLFWKeyCallback;
 
-import static org.LWJGL.glfw.GLFW.*;
-import static org.LWJGL.OpenGL.GL11.*;
-import static org.LWJGL.OpenGL.GL20.*;
-import static org.LWJGL.OpenGL.GL30.*;
-import static org.LWJGL.OpenGL.GL31.*;
+import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL31.*;
+import org.lwjgl.opengl.GL;
 
-/**
- * Punto de entrada y administrador principal del juego.
- * Inicializa los sistemas, ejecuta el game loop y gestiona update/render.
- */
 public class Game {
     private long window;
     private int width;
@@ -26,10 +23,14 @@ public class Game {
     private Chunks chunks;
     private Player player;
     private TextureAtlas textureAtlas;
+    private Shader shader;
 
     private boolean running;
     private float lastTime;
     private float deltaTime;
+
+    private int totalFacesBefore = 0;
+    private int totalFacesAfter = 0;
 
     public Game(int width, int height, String title) {
         this.width = width;
@@ -38,13 +39,14 @@ public class Game {
     }
 
     public void init() {
+        GameLogger.log("Inicializando GLFW...");
         if (!glfwInit()) {
             throw new IllegalStateException("No se pudo inicializar GLFW");
         }
 
-        glfwWindowHint.GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint.GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint.GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         window = glfwCreateWindow(width, height, title, 0, 0);
         if (window == 0) {
@@ -54,13 +56,14 @@ public class Game {
         glfwMakeContextCurrent(window);
         GL.createCapabilities();
 
-        // Inicializar sistemas
+        GameLogger.log("OpenGL version: " + glGetString(GL_VERSION));
+
         textureAtlas = new TextureAtlas();
         world = new World();
         chunks = new Chunks(world);
         player = new Player(world);
+        shader = new Shader("shaders/block.vert", "shaders/block.frag");
 
-        // Callbacks de entrada
         glfwSetCursorPosCallback(window, new GLFWCursorPosCallback() {
             public void invoke(long win, double x, double y) {
                 player.setMouseLook((float) x, (float) y);
@@ -76,11 +79,16 @@ public class Game {
         });
 
         lastTime = getTime();
+
+        GameLogger.log("Sistemas inicializados");
+        GameLogger.log("Chunks iniciales: " + chunks.getChunkCount());
     }
 
     public void run() {
         init();
         running = true;
+
+        GameLogger.log("Iniciando bucle principal...");
 
         while (running && !glfwWindowShouldClose(window)) {
             float currentTime = getTime();
@@ -90,6 +98,8 @@ public class Game {
             glClearColor(0.24f, 0.56f, 0.74f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glEnable(GL_DEPTH_TEST);
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
 
             update(deltaTime);
             render();
@@ -107,9 +117,9 @@ public class Game {
     }
 
     private void render() {
+        shader.bind();
         textureAtlas.bind();
 
-        // Configurar proyección y vista
         Matrix4f projection = new Matrix4f()
             .perspective((float) Math.toRadians(70.0f), (float) width / height, 0.1f, 1000.0f);
 
@@ -124,27 +134,64 @@ public class Game {
                     player.getPosition().add(lookDir, new Vector3f()),
                     new Vector3f(0, 1, 0));
 
-        // Renderizar cada chunk
-        for (Chunk chunk : chunks.getChunks().values()) {
-            renderChunk(chunk, projection, view);
-        }
-    }
+        int projLoc = glGetUniformLocation(shader.getProgram(), "projection");
+        int viewLoc = glGetUniformLocation(shader.getProgram(), "view");
 
-    private void renderChunk(Chunk chunk, Matrix4f projection, Matrix4f view) {
-        // Renderizado básico de los bloques
-        // Aquí se renderizaría cada bloque visible
-        // Por ahora es un placeholder para la estructura
+        glUniformMatrix4fv(projLoc, false, projection.get(new float[16]));
+        glUniformMatrix4fv(viewLoc, false, view.get(new float[16]));
+
+        int totalFaces = 0;
+        int totalChunks = 0;
+
+        for (Chunk chunk : chunks.getChunks().values()) {
+            ChunkMesh mesh = chunk.getMesh();
+            if (mesh == null || mesh.isDirty()) {
+                ChunkMeshBuilder.MeshData meshData = ChunkMeshBuilder.buildMesh(chunk, world);
+                if (mesh == null) {
+                    mesh = new ChunkMesh();
+                    chunk.setMesh(mesh);
+                }
+                mesh.upload(meshData.vertices, meshData.indices);
+                totalFacesAfter += meshData.faceCount;
+            } else {
+                totalFacesAfter += mesh.getIndexCount() / 6;
+            }
+            mesh.render();
+            totalFaces += mesh.getIndexCount();
+            totalChunks++;
+        }
+
+        shader.unbind();
+
+        if (totalFaces > 0) {
+            totalFacesBefore = totalFaces;
+        }
     }
 
     private float getTime() {
         return (float) glfwGetTime();
     }
 
-    private void cleanup() {
+    public void cleanup() {
+        GameLogger.log("Limpiando recursos...");
+        if (shader != null) {
+            shader.cleanup();
+        }
+        if (textureAtlas != null) {
+        }
+        if (chunks != null) {
+            for (Chunk chunk : chunks.getChunks().values()) {
+                ChunkMesh mesh = chunk.getMesh();
+                if (mesh != null) {
+                    mesh.cleanup();
+                }
+            }
+        }
         glfwSetCursorPosCallback(window, null);
         glfwSetKeyCallback(window, null);
         glfwDestroyWindow(window);
         glfwTerminate();
+        GameLogger.log("Recursos limpiados");
     }
 
     public int getWidth() {

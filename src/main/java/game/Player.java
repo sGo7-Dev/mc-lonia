@@ -1,26 +1,20 @@
-package org.mclonia.game;
+package game;
 
 import org.joml.Vector3f;
 
-import static org.LWJGL.glfw.GLFW.*;
+import static org.lwjgl.glfw.GLFW.*;
 
-/**
- * Sistema del jugador y cámara en primera persona.
- */
 public class Player {
     private final World world;
 
-    // Posición
     private Vector3f position;
     private Vector3f velocity;
 
-    // Cámara
     private float yaw;
     private float pitch;
     private float sensitivity;
     private float moveSpeed;
 
-    // Configuración
     private static final float MAX_PITCH = 89.0f;
     private static final float MIN_PITCH = -89.0f;
     private static final float GRAVITY = 0.02f;
@@ -37,10 +31,8 @@ public class Player {
     }
 
     public void update(float deltaTime, long window) {
-        // Aplicar gravedad
         velocity.y -= GRAVITY;
 
-        // Movimiento WASD
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
             moveForward(deltaTime);
         }
@@ -57,10 +49,8 @@ public class Player {
             velocity.y = JUMP_HEIGHT;
         }
 
-        // Aplicar velocidad
         position.add(velocity.x * deltaTime * 60, velocity.y * deltaTime * 60, velocity.z * deltaTime * 60);
 
-        // Colisión simple con el suelo
         if (position.y < 16) {
             position.y = 16;
             velocity.y = 0;
@@ -103,7 +93,6 @@ public class Player {
         yaw -= mouseX * sensitivity;
         pitch -= mouseY * sensitivity;
 
-        // Limitar rotación vertical
         if (pitch > MAX_PITCH) pitch = MAX_PITCH;
         if (pitch < MIN_PITCH) pitch = MIN_PITCH;
     }

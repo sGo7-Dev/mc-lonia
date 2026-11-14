@@ -1,10 +1,7 @@
-package org.mclonia.game;
+package game;
 
 import java.util.Random;
 
-/**
- * Implementación simple de Perlin Noise.
- */
 public class PerlinNoise {
     private final int[] permutation;
 
@@ -14,14 +11,12 @@ public class PerlinNoise {
         for (int i = 0; i < 256; i++) {
             permutation[i] = i;
         }
-        // Mezclar
         for (int i = 255; i > 0; i--) {
             int j = random.nextInt(i + 1);
             int temp = permutation[i];
             permutation[i] = permutation[j];
             permutation[j] = temp;
         }
-        // Duplicar para evitar overflow
     }
 
     private int hash(int x, int y, int z) {
@@ -60,7 +55,7 @@ public class PerlinNoise {
         int A = permutation[X] + Y;
         int AA = permutation[A & 255] + Z;
         int AB = permutation[(A + 1) & 255] + Z;
-        int B = permutation[X + 1] + Y;
+        int B = permutation[(X + 1) & 255] + Y;
         int BA = permutation[B & 255] + Z;
         int BB = permutation[(B + 1) & 255] + Z;
 
@@ -79,7 +74,6 @@ public class PerlinNoise {
                 v),
             w);
 
-        // Normalizar a [0, 1]
         return (result + 1) / 2;
     }
 }

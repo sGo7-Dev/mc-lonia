@@ -1,9 +1,5 @@
-package org.mclonia.game;
+package game;
 
-/**
- * Representa un bloque individual dentro del mundo.
- * Contiene su tipo y posición.
- */
 public class Block {
     private final BlockType type;
     private final int x;

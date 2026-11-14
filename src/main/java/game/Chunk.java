@@ -1,11 +1,5 @@
-package org.mclonia.game;
+package game;
 
-import org.joml.Vector3i;
-
-/**
- * Representa un chunk del mundo (16x16x16 bloques).
- * Contiene los bloques y su posición dentro del mundo.
- */
 public class Chunk {
     public static final int SIZE = 16;
     public static final int SIZE_SQ = SIZE * SIZE;
@@ -13,15 +7,16 @@ public class Chunk {
     private final int worldX;
     private final int worldZ;
     private final Block[] blocks;
+    private ChunkMesh mesh;
 
     public Chunk(int worldX, int worldZ) {
         this.worldX = worldX;
         this.worldZ = worldZ;
         this.blocks = new Block[SIZE * SIZE * SIZE];
-        // Inicializar todo como aire
         for (int i = 0; i < blocks.length; i++) {
             blocks[i] = new Block(BlockType.AIR, 0, 0, 0);
         }
+        this.mesh = null;
     }
 
     public int getWorldX() {
@@ -44,9 +39,20 @@ public class Chunk {
             return;
         }
         blocks[y * SIZE_SQ + z * SIZE + x] = new Block(type, x, y, z);
+        if (mesh != null) {
+            mesh.setDirty(true);
+        }
     }
 
     public Block[] getBlocks() {
         return blocks;
+    }
+
+    public ChunkMesh getMesh() {
+        return mesh;
+    }
+
+    public void setMesh(ChunkMesh mesh) {
+        this.mesh = mesh;
     }
 }

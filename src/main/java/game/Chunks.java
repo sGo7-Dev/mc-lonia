@@ -1,13 +1,8 @@
-package org.mclonia.game;
+package game;
 
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Gestor de chunks.
- * Administra los chunks del mundo, generando y manteniendo un registro.
- * Por ahora genera 5 chunks iniciales.
- */
 public class Chunks {
     public static final int INITIAL_CHUNK_COUNT = 5;
 
@@ -17,11 +12,12 @@ public class Chunks {
     public Chunks(World world) {
         this.world = world;
         this.chunks = new HashMap<>();
-        // Generar 5 chunks iniciales en línea
+        GameLogger.log("Generando " + INITIAL_CHUNK_COUNT + " chunks iniciales...");
         for (int i = 0; i < INITIAL_CHUNK_COUNT; i++) {
             Chunk chunk = world.generateChunk(i - 2, 0);
             chunks.put(i + ",0", chunk);
         }
+        GameLogger.log("Chunks iniciales generados: " + chunks.size());
     }
 
     public Chunk getChunk(int chunkX, int chunkZ) {
@@ -38,10 +34,8 @@ public class Chunks {
     }
 
     public void update() {
-        // Actualizar lógica de chunks (preparado para futuras características)
     }
 
     public void render() {
-        // El renderizado se maneja en el Game principal
     }
 }

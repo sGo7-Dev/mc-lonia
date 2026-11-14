@@ -64,7 +64,7 @@ dependencies {
 }
 
 application {
-    mainClass = "org.mclonia.Main" 
+    mainClass = "game.Main" 
 }
 
 tasks.test {
