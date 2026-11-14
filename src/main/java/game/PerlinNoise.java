@@ -20,7 +20,7 @@ public class PerlinNoise {
     }
 
     private int hash(int x, int y, int z) {
-        int h = permutation[(x + permutation[(y + permutation[z]) % 256]) % 256];
+        int h = permutation[(x + permutation[(y + permutation[z & 255]) & 255]) & 255];
         return h;
     }
 
