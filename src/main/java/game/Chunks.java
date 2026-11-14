@@ -9,8 +9,7 @@ import java.util.Set;
 
 public class Chunks {
     public static final int INITIAL_CHUNK_COUNT = 5;
-    public static final int CHUNK_RENDER_RADIUS = 2;
-    public static final int MAX_CHUNKS = 20;
+    public static final int MAX_CHUNKS = 200;
 
     private final Map<String, Chunk> chunks;
     private final World world;
@@ -44,9 +43,9 @@ public class Chunks {
         int playerChunkX = (int) Math.floor(player.getPosition().x / Chunk.SIZE);
         int playerChunkZ = (int) Math.floor(player.getPosition().z / Chunk.SIZE);
 
-        // Generar chunks en circulo alrededor del jugador
+        // Generar chunks en circulo alrededor del jugador dentro de LOAD_DISTANCE
         Set<String> chunksToKeep = new HashSet<>();
-        int radius = CHUNK_RENDER_RADIUS;
+        int radius = GameConfig.LOAD_DISTANCE;
 
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {

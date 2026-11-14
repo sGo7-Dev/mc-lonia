@@ -38,10 +38,10 @@ public class Player {
         float dz = 0.0f;
 
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            dz -= 1.0f;
+            dz += 1.0f;
         }
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            dz += 1.0f;
+            dz -= 1.0f;
         }
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
             dx -= 1.0f;
@@ -90,8 +90,8 @@ public class Player {
     }
 
     public void setMouseLook(float mouseX, float mouseY) {
-        yaw -= mouseX * sensitivity;
-        pitch -= mouseY * sensitivity;
+        yaw += mouseX * sensitivity;
+        pitch += mouseY * sensitivity;
 
         if (pitch > MAX_PITCH) pitch = MAX_PITCH;
         if (pitch < MIN_PITCH) pitch = MIN_PITCH;

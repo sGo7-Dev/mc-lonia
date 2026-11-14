@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
-import org.joml.Vector2i;
 import org.lwjgl.system.MemoryUtil;
 
 import static org.lwjgl.stb.STBImage.stbi_load;
@@ -20,7 +19,7 @@ public class TextureAtlas {
     private final int width;
     private final int height;
 
-    private final Vector2i[] uvCoords;
+    private final float[][] uvOffsets;
 
     public TextureAtlas() {
         int[] tex = {-1};
@@ -43,11 +42,13 @@ public class TextureAtlas {
         this.width = w[0] == 0 ? 16 : w[0];
         this.height = h[0] == 0 ? 16 : h[0];
 
-        this.uvCoords = new Vector2i[BlockType.values().length];
-        uvCoords[BlockType.AIR.ordinal()] = new Vector2i(0, 0);
-        uvCoords[BlockType.GRASS.ordinal()] = new Vector2i(0, 0);
-        uvCoords[BlockType.DIRT.ordinal()] = new Vector2i(0, 0);
-        uvCoords[BlockType.STONE.ordinal()] = new Vector2i(0, 0);
+        this.uvOffsets = new float[BlockType.values().length][2];
+        int nonAirCols = 3;
+        float colWidth = 1.0f / nonAirCols;
+        uvOffsets[BlockType.AIR.ordinal()] = new float[]{0.0f, 0.0f};
+        uvOffsets[BlockType.GRASS.ordinal()] = new float[]{0.0f, 0.0f};
+        uvOffsets[BlockType.DIRT.ordinal()] = new float[]{colWidth, 0.0f};
+        uvOffsets[BlockType.STONE.ordinal()] = new float[]{colWidth * 2, 0.0f};
 
         GameLogger.log("TextureAtlas cargado: " + width + "x" + height);
     }
@@ -60,7 +61,7 @@ public class TextureAtlas {
             }
             byte[] data = is.readAllBytes();
             ByteBuffer buf = MemoryUtil.memAlloc(data.length + 1);
-            buf.put(data).flip();
+            buf.put(data);
             buf.put((byte) 0);
             buf.flip();
             try {
@@ -121,8 +122,8 @@ public class TextureAtlas {
         return height;
     }
 
-    public Vector2i getUV(BlockType type) {
-        return uvCoords[type.ordinal()];
+    public float[] getUVOffset(BlockType type) {
+        return uvOffsets[type.ordinal()];
     }
 
     public void bind() {

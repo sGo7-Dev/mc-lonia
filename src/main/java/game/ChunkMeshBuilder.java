@@ -17,12 +17,12 @@ public class ChunkMeshBuilder {
     };
 
     private static final int[][] FACE_QUADS = {
-        {0, 1, 2, 3},
-        {4, 7, 6, 5},
-        {0, 3, 7, 4},
-        {1, 5, 6, 2},
-        {0, 4, 5, 1},
         {3, 2, 6, 7},
+        {0, 4, 5, 1},
+        {4, 5, 6, 7},
+        {0, 1, 2, 3},
+        {1, 5, 6, 2},
+        {0, 3, 7, 4},
     };
 
     private static final float[][] FACE_NORMALS = {
@@ -37,13 +37,13 @@ public class ChunkMeshBuilder {
     private static final float[][] FACE_UVS = {
         {0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f},
         {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f},
-        {0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f},
-        {1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f},
         {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f},
-        {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f},
+        {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f},
+        {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f},
+        {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f},
     };
 
-    public static MeshData buildMesh(Chunk chunk, World world) {
+    public static MeshData buildMesh(Chunk chunk, World world, TextureAtlas atlas) {
         List<Float> vertexList = new ArrayList<>();
         List<Integer> indexList = new ArrayList<>();
 
@@ -79,7 +79,7 @@ public class ChunkMeshBuilder {
                             continue;
                         }
 
-                        addFace(vertexList, indexList, x, y, z, faceIndex, type);
+                        addFace(vertexList, indexList, x, y, z, faceIndex, type, atlas);
                         facesGenerated++;
                     }
                 }
@@ -102,10 +102,16 @@ public class ChunkMeshBuilder {
     }
 
     private static void addFace(List<Float> vertexList, List<Integer> indexList,
-                                int bx, int by, int bz, int faceIndex, BlockType type) {
+                                int bx, int by, int bz, int faceIndex, BlockType type, TextureAtlas atlas) {
         int[] quad = FACE_QUADS[faceIndex];
         float[] normals = FACE_NORMALS[faceIndex];
-        float[] uvs = FACE_UVS[faceIndex];
+        float[] uvs = FACE_UVS[faceIndex].clone();
+
+        float[] offset = atlas.getUVOffset(type);
+        float colWidth = 1.0f / 3.0f;
+        for (int i = 0; i < 4; i++) {
+            uvs[i * 2] = uvs[i * 2] * colWidth + offset[0];
+        }
 
         int baseVertex = vertexList.size() / 8;
 

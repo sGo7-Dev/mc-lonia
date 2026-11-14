@@ -50,8 +50,6 @@ public class Game {
     private GameState state;
 
     // Configuracion de generacion de chunks alrededor del jugador
-    private static final int CHUNK_RENDER_RADIUS = 2;
-    private static final int MAX_CHUNKS = 20;
 
     public Game(int width, int height, String title) {
         this.width = width;
@@ -263,11 +261,21 @@ public class Game {
 
         int totalChunks = 0;
 
-        List<Chunk> chunkList = new ArrayList<>(world.getChunks().values());
+        int playerChunkX = (int) Math.floor(player.getPosition().x / Chunk.SIZE);
+        int playerChunkZ = (int) Math.floor(player.getPosition().z / Chunk.SIZE);
+
+        List<Chunk> chunkList = new ArrayList<>(chunks.getChunks().values());
         for (Chunk chunk : chunkList) {
+            int dx = chunk.getWorldX() - playerChunkX;
+            int dz = chunk.getWorldZ() - playerChunkZ;
+            double dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist > GameConfig.RENDER_DISTANCE) {
+                continue;
+            }
+
             ChunkMesh mesh = chunk.getMesh();
             if (mesh == null || mesh.isDirty()) {
-                ChunkMeshBuilder.MeshData meshData = ChunkMeshBuilder.buildMesh(chunk, world);
+                ChunkMeshBuilder.MeshData meshData = ChunkMeshBuilder.buildMesh(chunk, world, textureAtlas);
                 if (mesh == null) {
                     mesh = new ChunkMesh();
                     chunk.setMesh(mesh);

@@ -25,6 +25,16 @@ public class MainMenu {
 
     private boolean leftMouseWasPressed;
 
+    // Configuracion de diseno proporcional
+    private float btnW;
+    private float btnH;
+    private float btnSpacing;
+    private float titleYOffset;
+
+    // Ultimo tamaño conocido para detectar redimensionamiento
+    private int lastWidth;
+    private int lastHeight;
+
     public enum MenuResult {
         PLAY, QUIT, NONE
     }
@@ -36,23 +46,18 @@ public class MainMenu {
         this.result = MenuResult.NONE;
         this.visible = true;
         this.leftMouseWasPressed = false;
+        // Valores por defecto (se recalculan en recalculateLayout)
+        this.btnW = 320;
+        this.btnH = 70;
+        this.btnSpacing = 110;
+        this.titleYOffset = 240;
+        int[] initial = getWindowSize();
+        this.lastWidth = initial[0];
+        this.lastHeight = initial[1];
     }
 
     public void init() {
-        int[] w = new int[1];
-        int[] h = new int[1];
-        glfwGetWindowSize(window, w, h);
-        float width = w[0];
-        float height = h[0];
-
-        float btnW = 320;
-        float btnH = 70;
-        float centerX = width / 2f - btnW / 2f;
-        float startY = height / 2f + 100;
-
-        buttons.add(new MenuButton("Jugar", "PLAY", centerX, startY, btnW, btnH));
-        buttons.add(new MenuButton("Opciones", "OPTIONS", centerX, startY - 110, btnW, btnH));
-        buttons.add(new MenuButton("Salir", "QUIT", centerX, startY - 220, btnW, btnH));
+        recalculateLayout();
 
         shaderUI = new ShaderUI("shaders/ui.vert", "shaders/ui.frag");
 
@@ -68,6 +73,27 @@ public class MainMenu {
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
+
+    public void recalculateLayout() {
+        int[] size = getWindowSize();
+        float width = size[0];
+        float height = size[1];
+
+        // Dimensiones proporcionales a la altura de la ventana
+        btnW = width * 0.18f;     // 18% del ancho (botones mas compactos)
+        btnH = height * 0.08f;    // 8% del alto (botones mas compactos)
+        btnSpacing = height * 0.13f; // 13% del alto entre botones
+        titleYOffset = height * 0.28f; // Titulo un poco mas arriba
+
+        float centerX = width / 2f - btnW / 2f;
+        float startY = height / 2f + titleYOffset;
+
+        // Recrear botones con nuevas posiciones
+        buttons.clear();
+        buttons.add(new MenuButton("Jugar", "PLAY", centerX, startY, btnW, btnH));
+        buttons.add(new MenuButton("Opciones", "OPTIONS", centerX, startY - btnSpacing, btnW, btnH));
+        buttons.add(new MenuButton("Salir", "QUIT", centerX, startY - btnSpacing * 2, btnW, btnH));
     }
 
     private int[] getWindowSize() {
@@ -156,13 +182,22 @@ public class MainMenu {
         float width = size[0];
         float height = size[1];
 
+        // Recalcular layout si la ventana cambio de tamaño (maximizar, restaurar, redimensionar)
+        if (width != lastWidth || height != lastHeight) {
+            recalculateLayout();
+            lastWidth = (int) width;
+            lastHeight = (int) height;
+        }
+
         Matrix4f projection = new Matrix4f().ortho(0, width, 0, height, -1, 1);
 
         shaderUI.bind();
         int projLoc = glGetUniformLocation(shaderUI.getProgram(), "projection");
         glUniformMatrix4fv(projLoc, false, projection.get(new float[16]));
 
-        drawText("MC-LONIA", width / 2f - 150, height / 2f + 240, 1.0f, 1.0f, 1.0f);
+        // Titulo centrado
+        float titleWidth = textWidth("MC-LONIA");
+        drawText("MC-LONIA", width / 2f - titleWidth / 2f, height / 2f + titleYOffset, 1.0f, 1.0f, 1.0f);
 
         for (int i = 0; i < buttons.size(); i++) {
             MenuButton btn = buttons.get(i);
@@ -173,9 +208,14 @@ public class MainMenu {
             float fx = (float) mx[0];
             float fy = (float) (height - my[0]);
             boolean hovered = btn.contains(fx, fy);
-            drawText(btn.getText(),
-                btn.getX() + btn.getWidth() / 2f - textWidth(btn.getText()) / 2f,
-                btn.getY() + btn.getHeight() / 2f - 12,
+
+            // Texto centrado horizontal y verticalmente dentro del boton
+            float textW = textWidth(btn.getText());
+            float textX = btn.getX() + btn.getWidth() / 2f - textW / 2f;
+            // Glyph height es 8 filas * 2px escala = 16px. Centro vertical: mitad de boton - mitad de texto
+            float textY = btn.getY() + btn.getHeight() / 2f - 8;
+
+            drawText(btn.getText(), textX, textY,
                 hovered ? 1.0f : 0.8f,
                 hovered ? 1.0f : 0.8f,
                 hovered ? 1.0f : 0.8f);
@@ -227,7 +267,7 @@ public class MainMenu {
     }
 
     private int textWidth(String text) {
-        return text.length() * 18;
+        return text.length() * 12;
     }
 
     private void drawText(String text, float x, float y, float r, float g, float b) {
