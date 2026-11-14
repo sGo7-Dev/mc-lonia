@@ -2,6 +2,7 @@ import org.gradle.internal.os.OperatingSystem
 
 plugins {
     id("java")
+    id("application")
 }
 
 group = "org.mclonia"
@@ -60,6 +61,10 @@ dependencies {
     implementation("org.lwjgl:lwjgl-par::$lwjglNatives")
     implementation("org.lwjgl:lwjgl-stb::$lwjglNatives")
     implementation("org.joml:joml:1.10.9")
+}
+
+application {
+    mainClass = "org.mclonia.Main" 
 }
 
 tasks.test {
