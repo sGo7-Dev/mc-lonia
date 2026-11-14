@@ -31,25 +31,49 @@ public class Player {
     }
 
     public void update(float deltaTime, long window) {
-        velocity.y -= GRAVITY;
+        // Gravedad con deltaTime para consistencia entre framerates
+        velocity.y -= GRAVITY * deltaTime * 60.0f;
+
+        float dx = 0.0f;
+        float dz = 0.0f;
 
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            moveForward(deltaTime);
+            dz -= 1.0f;
         }
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            moveBackward(deltaTime);
+            dz += 1.0f;
         }
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            moveLeft(deltaTime);
+            dx -= 1.0f;
         }
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            moveRight(deltaTime);
+            dx += 1.0f;
         }
+
+        // Normalizar para que el movimiento diagonal no sea mas rapido
+        if (dx != 0.0f || dz != 0.0f) {
+            float len = (float) Math.sqrt(dx * dx + dz * dz);
+            dx /= len;
+            dz /= len;
+        }
+
+        float rad = (float) Math.toRadians(yaw);
+        float forwardX = (float) Math.sin(rad);
+        float forwardZ = (float) Math.cos(rad);
+        float rightX = (float) Math.sin(rad - Math.PI / 2.0);
+        float rightZ = (float) Math.cos(rad - Math.PI / 2.0);
+
+        float moveX = forwardX * dz + rightX * dx;
+        float moveZ = forwardZ * dz + rightZ * dx;
+
+        velocity.x = moveX * moveSpeed * deltaTime * 60.0f;
+        velocity.z = moveZ * moveSpeed * deltaTime * 60.0f;
+
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && onGround()) {
             velocity.y = JUMP_HEIGHT;
         }
 
-        position.add(velocity.x * deltaTime * 60, velocity.y * deltaTime * 60, velocity.z * deltaTime * 60);
+        position.add(velocity.x, velocity.y, velocity.z);
 
         if (position.y < 16) {
             position.y = 16;
@@ -63,30 +87,6 @@ public class Player {
         int z = (int) Math.floor(position.z);
         Block below = world.getBlock(x, y - 1, z);
         return !below.isAir();
-    }
-
-    private void moveForward(float deltaTime) {
-        float rad = (float) Math.toRadians(yaw);
-        velocity.z = (float) (Math.cos(rad) * moveSpeed);
-        velocity.x = (float) (Math.sin(rad) * moveSpeed);
-    }
-
-    private void moveBackward(float deltaTime) {
-        float rad = (float) Math.toRadians(yaw);
-        velocity.z = -(float) (Math.cos(rad) * moveSpeed);
-        velocity.x = -(float) (Math.sin(rad) * moveSpeed);
-    }
-
-    private void moveLeft(float deltaTime) {
-        float rad = (float) Math.toRadians(yaw - 90);
-        velocity.z = (float) (Math.cos(rad) * moveSpeed);
-        velocity.x = (float) (Math.sin(rad) * moveSpeed);
-    }
-
-    private void moveRight(float deltaTime) {
-        float rad = (float) Math.toRadians(yaw + 90);
-        velocity.z = (float) (Math.cos(rad) * moveSpeed);
-        velocity.x = (float) (Math.sin(rad) * moveSpeed);
     }
 
     public void setMouseLook(float mouseX, float mouseY) {

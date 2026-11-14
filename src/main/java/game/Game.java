@@ -1,7 +1,9 @@
 package game;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -10,6 +12,7 @@ import org.lwjgl.opengl.GL;
 
 import game.mainmenu.MainMenu;
 import game.panel.LoadPanel;
+import game.word.CicloDiaNoche;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -30,13 +33,11 @@ public class Game {
     private Shader shader;
     private MainMenu menu;
     private LoadPanel loadPanel;
+    private CicloDiaNoche cicloDiaNoche;
 
     private boolean running;
     private float lastTime;
     private float deltaTime;
-
-    private int totalFacesBefore = 0;
-    private int totalFacesAfter = 0;
 
     private double lastMouseX;
     private double lastMouseY;
@@ -47,6 +48,10 @@ public class Game {
     }
 
     private GameState state;
+
+    // Configuracion de generacion de chunks alrededor del jugador
+    private static final int CHUNK_RENDER_RADIUS = 2;
+    private static final int MAX_CHUNKS = 20;
 
     public Game(int width, int height, String title) {
         this.width = width;
@@ -73,6 +78,9 @@ public class Game {
         glfwMakeContextCurrent(window);
         GL.createCapabilities();
 
+        // VSYNC para limitar FPS y evitar 100% CPU
+        glfwSwapInterval(1);
+
         GameLogger.log("OpenGL version: " + glGetString(GL_VERSION));
 
         // Face culling habilitado desde el inicio
@@ -90,8 +98,33 @@ public class Game {
         loadPanel = new LoadPanel(window, width, height);
         loadPanel.init();
 
-        menu = new MainMenu(window, width, height);
+        menu = new MainMenu(window);
         menu.init();
+
+        cicloDiaNoche = new CicloDiaNoche();
+
+        // Callback de movimiento del mouse para rotar camara
+        glfwSetCursorPosCallback(window, (win, mouseX, mouseY) -> {
+            if (state == GameState.PLAYING) {
+                if (firstMouse) {
+                    lastMouseX = mouseX;
+                    lastMouseY = mouseY;
+                    firstMouse = false;
+                }
+                double offsetX = mouseX - lastMouseX;
+                double offsetY = lastMouseY - mouseY; // Invertido porque Y crece hacia abajo
+                lastMouseX = mouseX;
+                lastMouseY = mouseY;
+                player.setMouseLook((float) offsetX, (float) offsetY);
+            }
+        });
+
+        // Callback de resize para actualizar proyeccion
+        glfwSetFramebufferSizeCallback(window, (win, w, h) -> {
+            this.width = w;
+            this.height = h;
+            glViewport(0, 0, w, h);
+        });
 
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
@@ -118,11 +151,22 @@ public class Game {
             deltaTime = currentTime - lastTime;
             lastTime = currentTime;
 
+            // Limitar deltaTime para evitar saltos grandes si la ventana se congelo
+            if (deltaTime > 0.1f) {
+                deltaTime = 0.1f;
+            }
+
             processInput();
 
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glEnable(GL_DEPTH_TEST);
+
+            if (state == GameState.PLAYING && cicloDiaNoche != null) {
+                Vector3f cielo = cicloDiaNoche.getColorCielo();
+                glClearColor(cielo.x, cielo.y, cielo.z, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            }
 
             switch (state) {
                 case LOADING:
@@ -134,7 +178,6 @@ public class Game {
                 case PLAYING:
                     update(deltaTime);
                     renderWorld();
-                    menu.render();
                     break;
             }
 
@@ -151,11 +194,17 @@ public class Game {
                 break;
             case MENU:
                 menu.updateInput();
-                if (menu.getResult() == MainMenu.MenuResult.PLAY) {
+                MainMenu.MenuResult result = menu.consumeResult();
+                if (result == MainMenu.MenuResult.PLAY) {
                     state = GameState.PLAYING;
                     menu.setVisible(false);
                     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-                } else if (menu.getResult() == MainMenu.MenuResult.QUIT) {
+                    // Centrar cursor al entrar al juego
+                    glfwSetCursorPos(window, width / 2.0, height / 2.0);
+                    lastMouseX = width / 2.0;
+                    lastMouseY = height / 2.0;
+                    firstMouse = true;
+                } else if (result == MainMenu.MenuResult.QUIT) {
                     running = false;
                 }
                 break;
@@ -171,15 +220,24 @@ public class Game {
     }
 
     private void update(float deltaTime) {
-        chunks.update();
+        chunks.update(player);
+        if (cicloDiaNoche != null) {
+            cicloDiaNoche.update(deltaTime);
+        }
     }
 
     private void renderWorld() {
         shader.bind();
         textureAtlas.bind();
 
+        int[] w = new int[1];
+        int[] h = new int[1];
+        glfwGetWindowSize(window, w, h);
+        float renderWidth = w[0];
+        float renderHeight = h[0];
+
         Matrix4f projection = new Matrix4f()
-            .perspective((float) Math.toRadians(70.0f), (float) width / height, 0.1f, 1000.0f);
+            .perspective((float) Math.toRadians(70.0f), renderWidth / renderHeight, 0.1f, 1000.0f);
 
         Vector3f lookDir = new Vector3f(
             (float) (Math.cos(Math.toRadians(player.getYaw())) * Math.cos(Math.toRadians(player.getPitch()))),
@@ -199,9 +257,10 @@ public class Game {
 
         glUniformMatrix4fv(projLoc, false, projection.get(new float[16]));
         glUniformMatrix4fv(viewLoc, false, view.get(new float[16]));
-        glUniform3f(lightLoc, 10.0f, 20.0f, 10.0f);
 
-        int totalFaces = 0;
+        Vector3f luzPos = cicloDiaNoche != null ? cicloDiaNoche.getLuzPosicion() : new Vector3f(10.0f, 20.0f, 10.0f);
+        glUniform3f(lightLoc, luzPos.x, luzPos.y, luzPos.z);
+
         int totalChunks = 0;
 
         List<Chunk> chunkList = new ArrayList<>(world.getChunks().values());
@@ -214,25 +273,18 @@ public class Game {
                     chunk.setMesh(mesh);
                 }
                 mesh.upload(meshData.vertices, meshData.indices);
-                totalFacesAfter += meshData.faceCount;
-            } else {
-                totalFacesAfter += mesh.getIndexCount() / 6;
             }
 
             Matrix4f model = new Matrix4f()
                 .translation(chunk.getWorldX() * Chunk.SIZE, 0, chunk.getWorldZ() * Chunk.SIZE);
-            glUniformMatrix4fv(modelLoc, false, model.get(new float[16]));
+            int modelLoc2 = glGetUniformLocation(shader.getProgram(), "model");
+            glUniformMatrix4fv(modelLoc2, false, model.get(new float[16]));
 
             mesh.render();
-            totalFaces += mesh.getIndexCount();
             totalChunks++;
         }
 
         shader.unbind();
-
-        if (totalFaces > 0) {
-            totalFacesBefore = totalFaces;
-        }
     }
 
     private float getTime() {
@@ -251,6 +303,7 @@ public class Game {
             shader.cleanup();
         }
         if (textureAtlas != null) {
+            // TextureAtlas no tiene metodo cleanup propio, pero se libera con el contexto OpenGL
         }
         if (chunks != null) {
             for (Chunk chunk : chunks.getChunks().values()) {
@@ -279,5 +332,9 @@ public class Game {
 
     public Player getPlayer() {
         return player;
+    }
+
+    public Chunks getChunks() {
+        return chunks;
     }
 }

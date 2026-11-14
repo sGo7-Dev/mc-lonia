@@ -14,8 +14,6 @@ import java.util.List;
 
 public class MainMenu {
     private final long window;
-    private final int width;
-    private final int height;
     private boolean fullscreen;
 
     private final List<MenuButton> buttons;
@@ -25,21 +23,28 @@ public class MainMenu {
     private boolean visible;
     private MenuResult result;
 
+    private boolean leftMouseWasPressed;
+
     public enum MenuResult {
         PLAY, QUIT, NONE
     }
 
-    public MainMenu(long window, int width, int height) {
+    public MainMenu(long window) {
         this.window = window;
-        this.width = width;
-        this.height = height;
         this.fullscreen = false;
         this.buttons = new ArrayList<MenuButton>();
         this.result = MenuResult.NONE;
         this.visible = true;
+        this.leftMouseWasPressed = false;
     }
 
     public void init() {
+        int[] w = new int[1];
+        int[] h = new int[1];
+        glfwGetWindowSize(window, w, h);
+        float width = w[0];
+        float height = h[0];
+
         float btnW = 320;
         float btnH = 70;
         float centerX = width / 2f - btnW / 2f;
@@ -65,6 +70,13 @@ public class MainMenu {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
 
+    private int[] getWindowSize() {
+        int[] w = new int[1];
+        int[] h = new int[1];
+        glfwGetWindowSize(window, w, h);
+        return new int[]{w[0], h[0]};
+    }
+
     public void updateInput() {
         if (!visible) {
             return;
@@ -74,7 +86,13 @@ public class MainMenu {
             toggleFullscreen();
         }
 
-        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+        boolean leftMousePressed = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+        boolean leftMouseClicked = leftMousePressed && !leftMouseWasPressed;
+        leftMouseWasPressed = leftMousePressed;
+
+        if (leftMouseClicked) {
+            int[] size = getWindowSize();
+            float height = size[1];
             double[] mx = new double[1];
             double[] my = new double[1];
             glfwGetCursorPos(window, mx, my);
@@ -105,9 +123,15 @@ public class MainMenu {
         }
     }
 
+    public MenuResult consumeResult() {
+        MenuResult r = result;
+        result = MenuResult.NONE;
+        return r;
+    }
+
     private void toggleFullscreen() {
         if (fullscreen) {
-            glfwSetWindowMonitor(window, 0, 100, 100, width, height, 0);
+            glfwSetWindowMonitor(window, 0, 100, 100, 1280, 720, 0);
             fullscreen = false;
         } else {
             long monitor = glfwGetPrimaryMonitor();
@@ -127,6 +151,10 @@ public class MainMenu {
         if (!visible) {
             return;
         }
+
+        int[] size = getWindowSize();
+        float width = size[0];
+        float height = size[1];
 
         Matrix4f projection = new Matrix4f().ortho(0, width, 0, height, -1, 1);
 
@@ -159,6 +187,9 @@ public class MainMenu {
     }
 
     private void drawButton(MenuButton btn) {
+        int[] size = getWindowSize();
+        float height = size[1];
+
         float x = btn.getX();
         float y = btn.getY();
         float w = btn.getWidth();
@@ -219,11 +250,12 @@ public class MainMenu {
                 byte bits = glyph[row];
                 for (int col = 0; col < 8; col++) {
                     if ((bits & (1 << (7 - col))) != 0) {
+                        float ry = y + (7 - row) * 2;
                         float[] vertices = {
-                            cx + col * 2, y + row * 2,
-                            cx + col * 2 + 2, y + row * 2,
-                            cx + col * 2 + 2, y + row * 2 + 2,
-                            cx + col * 2, y + row * 2 + 2
+                            cx + col * 2, ry,
+                            cx + col * 2 + 2, ry,
+                            cx + col * 2 + 2, ry + 2,
+                            cx + col * 2, ry + 2
                         };
                         glBufferSubData(GL_ARRAY_BUFFER, 0, vertices);
                         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -317,10 +349,6 @@ public class MainMenu {
         } else {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
-    }
-
-    public MenuResult getResult() {
-        return result;
     }
 
     public void cleanup() {

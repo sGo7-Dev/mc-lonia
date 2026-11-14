@@ -191,11 +191,12 @@ public class LoadPanel {
                 byte bits = glyph[row];
                 for (int col = 0; col < 8; col++) {
                     if ((bits & (1 << (7 - col))) != 0) {
+                        float ry = y + (7 - row) * 2;
                         float[] vertices = {
-                            cx + col * 2, y + row * 2,
-                            cx + col * 2 + 2, y + row * 2,
-                            cx + col * 2 + 2, y + row * 2 + 2,
-                            cx + col * 2, y + row * 2 + 2
+                            cx + col * 2, ry,
+                            cx + col * 2 + 2, ry,
+                            cx + col * 2 + 2, ry + 2,
+                            cx + col * 2, ry + 2
                         };
                         glBufferSubData(GL_ARRAY_BUFFER, 0, vertices);
                         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);

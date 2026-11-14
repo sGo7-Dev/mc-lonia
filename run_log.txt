@@ -1,9 +1,9 @@
-[2026-11-13 22:51:57.511] === Inicio de sesion MC-Lonia ===
-[2026-11-13 22:51:57.518] Iniciando MC-Lonia...
-[2026-11-13 22:51:57.523] Version de LWJGL: 3.4.3+4
-[2026-11-13 22:51:57.526] Inicializando GLFW...
+[2026-11-13 23:37:24.274] === Inicio de sesion MC-Lonia ===
+[2026-11-13 23:37:24.281] Iniciando MC-Lonia...
+[2026-11-13 23:37:24.285] Version de LWJGL: 3.4.3+4
+[2026-11-13 23:37:24.288] Inicializando GLFW...
 WARNING: A restricted method in java.lang.System has been called
-WARNING: java.lang.System::load has been called by org.lwjgl.system.Library$$Lambda/0x0000000002046ee0 in an unnamed module (file:/C:/Users/seven/Guithub/mc-lonia/build/install/mclonia/lib/lwjgl-3.4.3.jar)
+WARNING: java.lang.System::load has been called by org.lwjgl.system.Library$$Lambda/0x0000000030046ee0 in an unnamed module (file:/C:/Users/seven/Guithub/mc-lonia/build/install/mclonia/lib/lwjgl-3.4.3.jar)
 WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
 WARNING: Restricted methods will be blocked in a future release unless native access is enabled
 
@@ -11,28 +11,30 @@ WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
 WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.lwjgl.system.MemoryBackendUnsafeLegacy (file:/C:/Users/seven/Guithub/mc-lonia/build/install/mclonia/lib/lwjgl-3.4.3.jar)
 WARNING: Please consider reporting this to the maintainers of class org.lwjgl.system.MemoryBackendUnsafeLegacy
 WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
-[2026-11-13 22:51:58.669] OpenGL version: 3.3.0 Core Profile Context 26.5.2.260413
-[2026-11-13 22:51:58.671] Face culling activado
-[2026-11-13 22:51:58.703] stbi_load fallo para /assets/textures/testgrafics_texture.png
-[2026-11-13 22:51:58.703] Usando textura faltante como respaldo.
-[2026-11-13 22:51:58.704] stbi_load fallo para /assets/textures/missing_texture.png
-[2026-11-13 22:51:58.706] Usando textura de fallback generada.
-[2026-11-13 22:51:58.715] TextureAtlas cargado: 16x16
-[2026-11-13 22:51:58.717] Mundo creado
-[2026-11-13 22:51:58.717] Generando 5 chunks iniciales...
-[2026-11-13 22:51:58.718] Generando chunk [-2,0]...
-[2026-11-13 22:51:58.722] Chunk [-2,0] generado
-[2026-11-13 22:51:58.722] Generando chunk [-1,0]...
-[2026-11-13 22:51:58.724] Chunk [-1,0] generado
-[2026-11-13 22:51:58.724] Generando chunk [0,0]...
-[2026-11-13 22:51:58.726] Chunk [0,0] generado
-[2026-11-13 22:51:58.726] Generando chunk [1,0]...
-[2026-11-13 22:51:58.727] Chunk [1,0] generado
-[2026-11-13 22:51:58.727] Generando chunk [2,0]...
-[2026-11-13 22:51:58.729] Chunk [2,0] generado
-[2026-11-13 22:51:58.729] Chunks iniciales generados: 5
-[2026-11-13 22:51:58.884] LoadPanel inicializado con face culling activado
-[2026-11-13 22:51:58.927] Sistemas inicializados
-[2026-11-13 22:51:58.927] Estado inicial: LOADING
-[2026-11-13 22:51:58.928] Iniciando bucle principal...
-[2026-11-13 22:51:59.983] Carga completada. Iniciando juego...
+[2026-11-13 23:37:25.181] OpenGL version: 3.3.0 Core Profile Context 26.5.2.260413
+[2026-11-13 23:37:25.181] Face culling activado
+[2026-11-13 23:37:25.208] stbi_load fallo para /assets/textures/testgrafics_texture.png
+[2026-11-13 23:37:25.208] Usando textura faltante como respaldo.
+[2026-11-13 23:37:25.209] stbi_load fallo para /assets/textures/missing_texture.png
+[2026-11-13 23:37:25.210] Usando textura de fallback generada.
+[2026-11-13 23:37:25.215] TextureAtlas cargado: 16x16
+[2026-11-13 23:37:25.217] Mundo creado
+[2026-11-13 23:37:25.217] Generando 5 chunks iniciales...
+[2026-11-13 23:37:25.218] Generando chunk [-2,0]...
+[2026-11-13 23:37:25.222] Chunk [-2,0] generado
+[2026-11-13 23:37:25.222] Generando chunk [-1,0]...
+[2026-11-13 23:37:25.224] Chunk [-1,0] generado
+[2026-11-13 23:37:25.224] Generando chunk [0,0]...
+[2026-11-13 23:37:25.225] Chunk [0,0] generado
+[2026-11-13 23:37:25.225] Generando chunk [1,0]...
+[2026-11-13 23:37:25.227] Chunk [1,0] generado
+[2026-11-13 23:37:25.227] Generando chunk [2,0]...
+[2026-11-13 23:37:25.228] Chunk [2,0] generado
+[2026-11-13 23:37:25.229] Chunks iniciales generados: 5
+[2026-11-13 23:37:25.357] LoadPanel inicializado con face culling activado
+[2026-11-13 23:37:25.463] Sistemas inicializados
+[2026-11-13 23:37:25.463] Estado inicial: LOADING
+[2026-11-13 23:37:25.463] Iniciando bucle principal...
+[2026-11-13 23:37:26.523] Carga completada. Iniciando juego...
+
+C:\Users\seven\Guithub\mc-lonia>
