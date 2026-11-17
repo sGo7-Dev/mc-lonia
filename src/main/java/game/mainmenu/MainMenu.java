@@ -19,21 +19,13 @@ public class MainMenu {
     private final List<MenuButton> buttons;
     private ShaderUI shaderUI;
     private int vao, vbo;
-
-    private boolean visible;
+private boolean visible;
     private MenuResult result;
 
+    private float btnW, btnH, btnSpacing, titleYOffset;
+    private float textScale;
+    private int lastWidth, lastHeight;
     private boolean leftMouseWasPressed;
-
-    // Configuracion de diseno proporcional
-    private float btnW;
-    private float btnH;
-    private float btnSpacing;
-    private float titleYOffset;
-
-    // Ultimo tamaño conocido para detectar redimensionamiento
-    private int lastWidth;
-    private int lastHeight;
 
     public enum MenuResult {
         PLAY, QUIT, NONE
@@ -75,19 +67,27 @@ public class MainMenu {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
 
-    public void recalculateLayout() {
+public void recalculateLayout() {
         int[] size = getWindowSize();
         float width = size[0];
         float height = size[1];
 
-        // Dimensiones proporcionales a la altura de la ventana
-        btnW = width * 0.18f;     // 18% del ancho (botones mas compactos)
-        btnH = height * 0.08f;    // 8% del alto (botones mas compactos)
-        btnSpacing = height * 0.13f; // 13% del alto entre botones
-        titleYOffset = height * 0.28f; // Titulo un poco mas arriba
+        // Dimensiones proporcionales - 50% del tamaño original
+        // Original: 18% ancho, 8% alto, 13% spacing
+        // Nuevo: 9% ancho, 4% alto, 6.5% spacing
+        btnW = width * 0.09f;       // 9% del ancho (50% reducido)
+        btnH = height * 0.04f;      // 4% del alto (50% reducido)
+        btnSpacing = height * 0.065f; // 6.5% del alto entre botones (50% reducido)
+        titleYOffset = height * 0.18f; // Título más arriba
+
+// Calcular escala de texto proporcional a la altura del botón
+        // Glyph original: 8px bitmap. Queremos que el texto ocupe ~60% de la altura del botón
+        float targetTextHeight = btnH * 0.6f;
+textScale = targetTextHeight / 8f; // 8px = altura original del glyph
 
         float centerX = width / 2f - btnW / 2f;
-        float startY = height / 2f + titleYOffset;
+        // Los botones van DEBAJO del título (Y aumenta hacia arriba en OpenGL)
+        float startY = height / 2f + titleYOffset - btnSpacing;
 
         // Recrear botones con nuevas posiciones
         buttons.clear();
@@ -198,32 +198,14 @@ public class MainMenu {
         // Titulo centrado
         float titleWidth = textWidth("MC-LONIA");
         drawText("MC-LONIA", width / 2f - titleWidth / 2f, height / 2f + titleYOffset, 1.0f, 1.0f, 1.0f);
-
-        for (int i = 0; i < buttons.size(); i++) {
-            MenuButton btn = buttons.get(i);
+// Dibujar botones
+        for (MenuButton btn : buttons) {
             drawButton(btn);
-            double[] mx = new double[1];
-            double[] my = new double[1];
-            glfwGetCursorPos(window, mx, my);
-            float fx = (float) mx[0];
-            float fy = (float) (height - my[0]);
-            boolean hovered = btn.contains(fx, fy);
-
-            // Texto centrado horizontal y verticalmente dentro del boton
-            float textW = textWidth(btn.getText());
-            float textX = btn.getX() + btn.getWidth() / 2f - textW / 2f;
-            // Glyph height es 8 filas * 2px escala = 16px. Centro vertical: mitad de boton - mitad de texto
-            float textY = btn.getY() + btn.getHeight() / 2f - 8;
-
-            drawText(btn.getText(), textX, textY,
-                hovered ? 1.0f : 0.8f,
-                hovered ? 1.0f : 0.8f,
-                hovered ? 1.0f : 0.8f);
         }
 
         drawText("F11: Pantalla completa", 20, 30, 0.6f, 0.6f, 0.6f);
 
-        shaderUI.unbind();
+shaderUI.unbind();
     }
 
     private void drawButton(MenuButton btn) {
@@ -264,10 +246,33 @@ public class MainMenu {
         glDrawArrays(GL_LINE_LOOP, 0, 4);
 
         glBindVertexArray(0);
+
+// Dibujar el texto centrado dentro del botón
+        String label = btn.getText();
+        float labelScale = textScale;
+
+        // Ancho real del texto
+        int tw = 0;
+        for (int i = 0; i < label.length(); i++) {
+            if (getGlyph(label.charAt(i)) != null) tw += 8;
+        }
+        tw = (int) (tw * labelScale);
+
+// Centrar horizontalmente
+        float textX = x + (w - tw) / 2f;
+        // Centrado vertical correcto: el glyph tiene 8 filas, la fila 0 es la superior
+        // Para centrar: y + (h - 8*scale)/2
+        float textY = y + (h - 8 * labelScale) / 2f;
+        // Color blanco puro
+        glColor3f(1.0f, 1.0f, 1.0f);
+        drawText(label, textX, textY, 1.0f, 1.0f, 1.0f);
     }
 
+
     private int textWidth(String text) {
-        return text.length() * 12;
+        // Ancho = número de caracteres * 8px (ancho glyph) * textScale
+        // Glyph original: 8px de ancho, escalado por textScale
+        return (int) (text.length() * 8 * textScale);
     }
 
     private void drawText(String text, float x, float y, float r, float g, float b) {
@@ -282,7 +287,7 @@ public class MainMenu {
             char c = text.charAt(i);
             byte[] glyph = getGlyph(c);
             if (glyph == null) {
-                cx += 18;
+                cx += 8 * textScale;
                 continue;
             }
 
@@ -290,25 +295,25 @@ public class MainMenu {
                 byte bits = glyph[row];
                 for (int col = 0; col < 8; col++) {
                     if ((bits & (1 << (7 - col))) != 0) {
-                        float ry = y + (7 - row) * 2;
+                        float ry = y + (7 - row) * textScale;
                         float[] vertices = {
-                            cx + col * 2, ry,
-                            cx + col * 2 + 2, ry,
-                            cx + col * 2 + 2, ry + 2,
-                            cx + col * 2, ry + 2
+                            cx + col * textScale, ry,
+                            cx + col * textScale + textScale, ry,
+                            cx + col * textScale + textScale, ry + textScale,
+                            cx + col * textScale, ry + textScale
                         };
                         glBufferSubData(GL_ARRAY_BUFFER, 0, vertices);
                         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
                     }
                 }
             }
-            cx += 18;
+            cx += 8 * textScale;
         }
 
         glBindVertexArray(0);
     }
 
-    private byte[] getGlyph(char c) {
+private byte[] getGlyph(char c) {
         switch (c) {
             case 'M': return new byte[]{
                 0b01000010, 0b01100110, 0b01100110, 0b01010101,
@@ -355,20 +360,65 @@ public class MainMenu {
                 0b00101000, 0b00100100, 0b00100010, 0b00000000
             };
             case 'E': return new byte[]{
-                0b00011100, 0b00100000, 0b00100000, 0b00111100,
-                0b00100010, 0b00100010, 0b00011100, 0b00000000
+                0b00011100, 0b01000000, 0b01000000, 0b00111100,
+                0b01000010, 0b01000010, 0b00011100, 0b00000000
             };
             case 'S': return new byte[]{
-                0b00011110, 0b00100000, 0b00100000, 0b00011100,
-                0b00000010, 0b00100010, 0b00011100, 0b00000000
+                0b00011110, 0b01000000, 0b01000000, 0b00011100,
+                0b00000010, 0b01000010, 0b00011100, 0b00000000
             };
             case 'P': return new byte[]{
-                0b00111100, 0b00100010, 0b00100010, 0b00111100,
-                0b00100000, 0b00100000, 0b00100000, 0b00000000
+                0b00111100, 0b01000010, 0b01000010, 0b00111100,
+                0b01000000, 0b01000000, 0b01000000, 0b00000000
             };
             case 'T': return new byte[]{
                 0b01111110, 0b00010000, 0b00010000, 0b00010000,
                 0b00010000, 0b00010000, 0b00010000, 0b00000000
+            };
+            // Minúsculas para textos de botones
+            case 'a': return new byte[]{
+                0b00000000, 0b00000000, 0b00011100, 0b00100100,
+                0b00111100, 0b00100100, 0b00100100, 0b00000000
+            };
+            case 'c': return new byte[]{
+                0b00000000, 0b00000000, 0b00011100, 0b00100000,
+                0b00100000, 0b00100000, 0b00011100, 0b00000000
+            };
+            case 'e': return new byte[]{
+                0b00000000, 0b00000000, 0b00011100, 0b00100000,
+                0b00111100, 0b00100000, 0b00011100, 0b00000000
+            };
+            case 'i': return new byte[]{
+                0b00010000, 0b00000000, 0b00010000, 0b00010000,
+                0b00010000, 0b00010000, 0b00010000, 0b00000000
+            };
+            case 'l': return new byte[]{
+                0b00010000, 0b00010000, 0b00010000, 0b00010000,
+                0b00010000, 0b00010000, 0b00010000, 0b00000000
+            };
+            case 'n': return new byte[]{
+                0b00000000, 0b00000000, 0b00111100, 0b00100100,
+                0b00100100, 0b00100100, 0b00100100, 0b00000000
+            };
+            case 'o': return new byte[]{
+                0b00000000, 0b00000000, 0b00011100, 0b00100010,
+                0b00100010, 0b00100010, 0b00011100, 0b00000000
+            };
+            case 'p': return new byte[]{
+                0b00000000, 0b00000000, 0b00111100, 0b00100010,
+                0b00111100, 0b00100000, 0b00100000, 0b00000000
+            };
+            case 'r': return new byte[]{
+                0b00000000, 0b00000000, 0b00111100, 0b00100010,
+                0b00100000, 0b00100000, 0b00100000, 0b00000000
+            };
+            case 's': return new byte[]{
+                0b00000000, 0b00000000, 0b00011100, 0b00100000,
+                0b00011100, 0b00000010, 0b00111100, 0b00000000
+            };
+            case 'u': return new byte[]{
+                0b00000000, 0b00000000, 0b00100010, 0b00100010,
+                0b00100010, 0b00100010, 0b00011100, 0b00000000
             };
             case ' ': return new byte[]{
                 0b00000000, 0b00000000, 0b00000000, 0b00000000,
